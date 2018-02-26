@@ -14,39 +14,59 @@ class PetListViewController: UIViewController, UITableViewDelegate, UITableViewD
 
     final let urlDogNames = "https://dog.ceo/api/breeds/list"
     var dogNameArray = [String]()
+    var dogImageArray = [String]()
     
     override func viewDidLoad() {
         super.viewDidLoad()
         self.getDogNames()
-        // Do any additional setup after loading the view, typically from a nib.
     }
     
     override func didReceiveMemoryWarning() {
         super.didReceiveMemoryWarning()
         // Dispose of any resources that can be recreated.
     }
+    
 //MARK: TABLEVIEW CONFIG
     func getDogNames (){
         let url = NSURL(string: urlDogNames)
         URLSession.shared.dataTask(with: (url as URL?)!, completionHandler: {(data, response, error) -> Void in
-            
             if let jsonObj = try? JSONSerialization.jsonObject(with: data!, options: .allowFragments) as? NSDictionary {
                 if (jsonObj!.value(forKey: "status") as? String == "success"){
                     if let dogsNameArray = jsonObj!.value(forKey: "message") as? NSArray {
                         for dogName in dogsNameArray{
                             self.dogNameArray.append(dogName as! String)
+                            self.getImageDog(dogName: dogName as! String)
                         }
-    //                    print (self.dogNameArray)
                     }
                     OperationQueue.main.addOperation({
                         self.uitableview.reloadData()
                     })
                 }
-                else {
-                    self.dogNameArray = ["No se pudo obtener información"]
-                }
             }
         }).resume()
+    }
+    func getImageDog(dogName:String){
+        let urlImageDog = "https://dog.ceo/api/breed/\(dogName)/images"
+        let url = NSURL(string: urlImageDog)
+        URLSession.shared.dataTask(with: (url as URL?)!, completionHandler: {(data, response, error) -> Void in
+            if let jsonObj = try? JSONSerialization.jsonObject(with: data!, options: .allowFragments) as? NSDictionary {
+                if (jsonObj!.value(forKey: "status") as? String == "success"){
+//                    self.dogNameArray.append(dogName)
+                    if let dogsImagesArray = jsonObj!.value(forKey: "message") as? NSArray {
+                        self.dogImageArray.append(dogsImagesArray[0] as! String)
+                    }
+                }
+//                OperationQueue.main.addOperation({
+                    self.uitableview.reloadData()
+//                })
+            }
+        }).resume()
+    }
+    
+    func getDataFromUrl(url: URL, completion: @escaping (Data?, URLResponse?, Error?) -> ()){
+        URLSession.shared.dataTask(with: url) { data, response, error in
+            completion(data, response, error)
+            }.resume()
     }
 
 //MARK: TABLEVIEW CONFIG
@@ -57,7 +77,19 @@ class PetListViewController: UIViewController, UITableViewDelegate, UITableViewD
     func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
         let cell = tableView.dequeueReusableCell(withIdentifier: "cell", for: indexPath) as! ViewControllerTableViewCell
         cell.uiNameDog.text = dogNameArray[indexPath.row]
-        cell.uiImageDog.image = nil
+        if dogImageArray.count > 0 {
+            let imgURL = NSURL(string: dogImageArray[indexPath.row])
+            if imgURL != nil {
+                getDataFromUrl(url: URL(string: dogImageArray[indexPath.row])!) { data, response, error in
+                    guard let data = data, error == nil else { return }
+                    //            print(response?.suggestedFilename ?? url.lastPathComponent)
+                    print("Download Finished")
+//                    DispatchQueue.main.async() {
+                        cell.uiImageDog.image = UIImage(data: data)
+//                    }
+                }
+            }
+        }
         return cell
     }
 }
