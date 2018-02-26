@@ -53,7 +53,8 @@ class PetListViewController: UIViewController, UITableViewDelegate, UITableViewD
                 if (jsonObj!.value(forKey: "status") as? String == "success"){
 //                    self.dogNameArray.append(dogName)
                     if let dogsImagesArray = jsonObj!.value(forKey: "message") as? NSArray {
-                        self.dogImageArray.append(dogsImagesArray[0] as! String)
+                        let randomVal = self.randomNum(dogsImagesArray.count)
+                        self.dogImageArray.append(dogsImagesArray[randomVal] as! String)
                     }
                 }
 //                OperationQueue.main.addOperation({
@@ -67,6 +68,9 @@ class PetListViewController: UIViewController, UITableViewDelegate, UITableViewD
         URLSession.shared.dataTask(with: url) { data, response, error in
             completion(data, response, error)
             }.resume()
+    }
+    private func randomNum(_ n:Int) -> Int {
+        return Int(arc4random_uniform(UInt32(n)))
     }
 
 //MARK: TABLEVIEW CONFIG
